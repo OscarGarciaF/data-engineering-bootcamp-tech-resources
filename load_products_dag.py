@@ -4,10 +4,10 @@ import airflow.utils.dates
 from airflow import DAG
 
 # Operators; we need this to operate!
-from custom_modules.dag_s3_to_postgres import S3ToPostgresTransfer
+from custom_dags.dag_s3_to_postgres import S3ToPostgresTransfer
 
 default_args = {
-    'owner': 'juan.escobar',
+    'owner': 'oscar.garcia,
     'depends_on_past': False,
     'start_date': airflow.utils.dates.days_ago(1)
 }
