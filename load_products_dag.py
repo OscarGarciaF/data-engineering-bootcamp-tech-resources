@@ -7,7 +7,7 @@ from airflow import DAG
 from custom_dags.dag_s3_to_postgres import S3ToPostgresTransfer
 
 default_args = {
-    'owner': 'oscar.garcia,
+    'owner': 'oscar.garcia',
     'depends_on_past': False,
     'start_date': airflow.utils.dates.days_ago(1)
 }
@@ -16,10 +16,10 @@ dag = DAG('dag_insert_data', default_args = default_args, schedule_interval = '@
 
 process_dag = S3ToPostgresTransfer(
     task_id = 'dag_s3_to_postgres',
-    schema = 'bootcampdb',
-    table= 'products',
-    s3_bucket = 'bootcamp-wl-de-airflow',
-    s3_key =  'products.csv',
+    schema = 'bronze',
+    table= 'user_purchase',
+    s3_bucket = 'aws-emr-resources-704943069631-us-east-1',
+    s3_key =  'user_purchase.csv',
     aws_conn_postgres_id = 'postgres_default',
     aws_conn_id = 'aws_default',   
     dag = dag
