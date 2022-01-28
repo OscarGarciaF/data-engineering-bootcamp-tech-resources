@@ -4,7 +4,6 @@ from airflow.models import BaseOperator
 from airflow.utils.decorators import apply_defaults
 from airflow.exceptions import AirflowException
 import os.path
-import pandas as pd
 import io
 import re
 import csv
