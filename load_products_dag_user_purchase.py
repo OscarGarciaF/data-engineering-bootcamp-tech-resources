@@ -15,7 +15,7 @@ default_args = {
 dag = DAG('dag_insert_data', default_args = default_args, schedule_interval = '@daily')
 
 process_dag = S3ToPostgresTransfer(
-    task_id = 'dag_s3_to_postgres',
+    task_id = 'dag_s3_to_postgres_user_purchase',
     schema = 'bronze',
     table= 'user_purchase',
     s3_bucket = 'oscar-airflow-bucket',
