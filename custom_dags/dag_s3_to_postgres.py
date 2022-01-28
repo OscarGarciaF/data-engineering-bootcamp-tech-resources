@@ -6,6 +6,8 @@ from airflow.exceptions import AirflowException
 import os.path
 import pandas as pd
 import io
+import re
+import csv
 
 
 class S3ToPostgresTransfer(BaseOperator):
@@ -76,23 +78,26 @@ class S3ToPostgresTransfer(BaseOperator):
 
         # Read and decode the file into a list of strings.  
         list_srt_content = s3_key_object.get()['Body'].read().decode(encoding = "utf-8", errors = "ignore")
-        
+
+
+        """
         # schema definition for data types of the source.
         schema = {
                     'invoice_number': 'string',
                     'stock_code': 'string',
                     'detail': 'string',
-                    'quantity': 'int',
+                    'quantity': 'string',
                     'invoice_date': 'string',
-                    'unit_price': 'float64',                                
-                    'customer_id': 'int',
+                    'unit_price': 'string',                                
+                    'customer_id': 'string',
                     'country': 'string'
                  }  
         #date_cols = ['fechaRegistro']         
 
         # read a csv file with the properties required.
+        
         df = pd.read_csv(io.StringIO(list_srt_content), 
-                         header=0, 
+                         header=1, 
                          delimiter=",",
                          quotechar='"',
                          low_memory=False,
@@ -103,10 +108,21 @@ class S3ToPostgresTransfer(BaseOperator):
         self.log.info(df.info())
 
         # formatting and converting the dataframe object in list to prepare the income of the next steps.
-        #df_products = df_products.replace(r"[\"]", r"'")
+        df = df.replace(r"[\"]", r"'")
         list_df = df.values.tolist()
         list_df = [tuple(x) for x in list_df]
-        self.log.info(list_df)   
+        """
+        with io.StringIO(list_srt_content) as file:
+            read_file = csv.reader(file, quotechar='"', delimiter=',', quoting=csv.QUOTE_ALL, skipinitialspace=True)
+            lines = [l for l in read_file]
+            #lines = [line.rstrip().split(",") for line in file]
+        lines = lines[1:] 
+        list_df = lines
+        self.log.info(list_df[0])
+        self.log.info(list_df[1])  
+        self.log.info(list_df[2])  
+        self.log.info(list_df[3])  
+        self.log.info(list_df[4])     
        
         # Read the file with the DDL SQL to create the table products in postgres DB.
         nombre_de_archivo = "bootcampdb.products.sql"
@@ -129,19 +145,18 @@ class S3ToPostgresTransfer(BaseOperator):
             self.log.info(SQL_COMMAND_CREATE_TBL)    
         """
 
-        SQL_COMMAND_CREATE_TBL = f"""   CREATE SCHEMA {self.schema};
-                                        CREATE TABLE {self.schema}.{self.table}(
-                                        invoice_number varchar(10),
-                                        stock_code varchar(20),
-                                        detail varchar(1000),
-                                        quantity int,
-                                        invoice_date timestamp,
-                                        unit_price numeric(8,3),                           
-                                        customer_id int,
-                                        country varchar(20),   
-                                        );
-        
-        """
+        SQL_COMMAND_CREATE_TBL = f"""   CREATE SCHEMA IF NOT EXISTS {self.schema};
+                                        DROP TABLE IF EXISTS {self.schema}.{self.table};
+                                        CREATE TABLE IF NOT EXISTS {self.schema}.{self.table}(
+                                        invoice_number varchar,
+                                        stock_code varchar,
+                                        detail varchar,
+                                        quantity varchar,
+                                        invoice_date varchar,
+                                        unit_price varchar,                           
+                                        customer_id varchar,
+                                        country varchar ); """
+        self.log.info(SQL_COMMAND_CREATE_TBL)   
         # execute command to create table in postgres.  
         self.pg_hook.run(SQL_COMMAND_CREATE_TBL)  
         
@@ -159,12 +174,12 @@ class S3ToPostgresTransfer(BaseOperator):
         self.pg_hook.insert_rows(self.current_table,  
                                  list_df, 
                                  target_fields = list_target_fields, 
-                                 commit_every = 1000,
+                                 commit_every = 10000,
                                  replace = False)
 
         # Query and print the values of the table products in the console.
-        self.request = 'SELECT * FROM ' + self.current_table
-        self.log.info(self.request)
+        self.request = 'SELECT * FROM ' + self.current_table + " LIMIT(5);"
+        self.log.info(self.request) 
         self.connection = self.pg_hook.get_conn()
         self.cursor = self.connection.cursor()
         self.cursor.execute(self.request)
@@ -172,11 +187,4 @@ class S3ToPostgresTransfer(BaseOperator):
         self.log.info(self.sources)
 
         for source in self.sources:           
-            self.log.info("invoice_number: {0} - \
-                           stock_code: {1} - \
-                           detail: {2} - \
-                           quantity: {3} - \
-                           invoice_date: {4} - \
-                           unit_price: {5} - \
-                           customer_id: {6} - \
-                           country: {7} ".format(source[0],source[1],source[2],source[3],source[4],source[5], source[6], source[7]))                                                  
+            self.log.info("invoice_number: {0} - stock_code: {1} - detail: {2} - quantity: {3} - invoice_date: {4} - unit_price: {5} - customer_id: {6} - country: {7} ".format(source[0],source[1],source[2],source[3],source[4],source[5], source[6], source[7]))                                                  
