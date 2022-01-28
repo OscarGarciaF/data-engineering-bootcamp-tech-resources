@@ -113,8 +113,9 @@ class S3ToPostgresTransfer(BaseOperator):
         list_df = [tuple(x) for x in list_df]
         """
         with io.StringIO(list_srt_content) as file:
-            read_file = csv.reader(file, quotechar='"', delimiter=',', quoting=csv.QUOTE_ALL, skipinitialspace=True)
+            read_file = csv.reader(file, quotechar='"',  delimiter=',', quoting=csv.QUOTE_MINIMAL, skipinitialspace=True)
             lines = [l for l in read_file]
+            lines = [[v if v is not '' else None for v in nested] for nested in lines]
             #lines = [line.rstrip().split(",") for line in file]
         lines = lines[1:] 
         list_df = lines
@@ -148,15 +149,15 @@ class S3ToPostgresTransfer(BaseOperator):
         SQL_COMMAND_CREATE_TBL = f"""   CREATE SCHEMA IF NOT EXISTS {self.schema};
                                         DROP TABLE IF EXISTS {self.schema}.{self.table};
                                         CREATE TABLE IF NOT EXISTS {self.schema}.{self.table}(
-                                        invoice_number varchar,
-                                        stock_code varchar,
-                                        detail varchar,
-                                        quantity varchar,
-                                        invoice_date varchar,
-                                        unit_price varchar,                           
-                                        customer_id varchar,
-                                        country varchar ); """
-        self.log.info(SQL_COMMAND_CREATE_TBL)   
+                                        invoice_number varchar(10),
+                                        stock_code varchar(20),
+                                        detail varchar(1000),
+                                        quantity int,
+                                        invoice_date timestamp,
+                                        unit_price numeric(8,3),                           
+                                        customer_id int,
+                                        country varchar(20) ); """
+        #self.log.info(SQL_COMMAND_CREATE_TBL)   
         # execute command to create table in postgres.  
         self.pg_hook.run(SQL_COMMAND_CREATE_TBL)  
         

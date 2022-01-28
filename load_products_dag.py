@@ -21,6 +21,7 @@ process_dag = S3ToPostgresTransfer(
     s3_bucket = 'oscar-airflow-bucket',
     s3_key =  'user_purchase.csv',
     aws_conn_postgres_id = 'postgres_default',
+    
     aws_conn_id = 'aws_default',   
     dag = dag
 )
