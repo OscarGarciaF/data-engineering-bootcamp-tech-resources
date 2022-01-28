@@ -32,13 +32,14 @@ class S3ToPostgresTransfer(BaseOperator):
             table,
             s3_bucket,
             s3_key,
+            table_types,
             aws_conn_postgres_id ='postgres_default',
             aws_conn_id='aws_default',
             verify=None,
             wildcard_match=False,
             copy_options=tuple(),
             autocommit=False,
-            parameters=None,
+            parameters=None,            
             *args, **kwargs):
         super(S3ToPostgresTransfer, self).__init__(*args, **kwargs)
         self.schema = schema
@@ -52,6 +53,7 @@ class S3ToPostgresTransfer(BaseOperator):
         self.copy_options = copy_options
         self.autocommit = autocommit
         self.parameters = parameters
+        self.table_types = table_types
   
     def execute(self, context):
         
@@ -119,6 +121,7 @@ class S3ToPostgresTransfer(BaseOperator):
             #lines = [line.rstrip().split(",") for line in file]
         lines = lines[1:] 
         list_df = lines
+        self.log.info("Number of records: " + str(len(list_df)))
         self.log.info(list_df[0])
         self.log.info(list_df[1])  
         self.log.info(list_df[2])  
@@ -146,22 +149,15 @@ class S3ToPostgresTransfer(BaseOperator):
             self.log.info(SQL_COMMAND_CREATE_TBL)    
         """
 
-        SQL_COMMAND_CREATE_TBL = f"""   CREATE SCHEMA IF NOT EXISTS {self.schema};
-                                        DROP TABLE IF EXISTS {self.schema}.{self.table};
-                                        CREATE TABLE IF NOT EXISTS {self.schema}.{self.table}(
-                                        invoice_number varchar(10),
-                                        stock_code varchar(20),
-                                        detail varchar(1000),
-                                        quantity int,
-                                        invoice_date timestamp,
-                                        unit_price numeric(8,3),                           
-                                        customer_id int,
-                                        country varchar(20) ); """
+        SQL_COMMAND_CREATE_TBL = f"""   CREATE SCHEMA IF NOT EXISTS {self.schema};                                        
+                                        CREATE TABLE IF NOT EXISTS {self.schema}.{self.table}( {self.table_types} ); 
+                                        TRUNCATE TABLE {self.schema}.{self.table};"""
         #self.log.info(SQL_COMMAND_CREATE_TBL)   
         # execute command to create table in postgres.  
         self.pg_hook.run(SQL_COMMAND_CREATE_TBL)  
         
         # set the columns to insert, in this case we ignore the id, because is autogenerate.
+        """
         list_target_fields = ['invoice_number', 
                               'stock_code',
                               'detail', 
@@ -170,11 +166,12 @@ class S3ToPostgresTransfer(BaseOperator):
                               'unit_price', 
                               'customer_id', 
                               'country']
+        """
         
         self.current_table = self.schema + '.' + self.table
         self.pg_hook.insert_rows(self.current_table,  
                                  list_df, 
-                                 target_fields = list_target_fields, 
+                                 #target_fields = list_target_fields, 
                                  commit_every = 10000,
                                  replace = False)
 

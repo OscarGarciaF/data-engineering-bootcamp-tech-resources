@@ -21,7 +21,14 @@ process_dag = S3ToPostgresTransfer(
     s3_bucket = 'oscar-airflow-bucket',
     s3_key =  'user_purchase.csv',
     aws_conn_postgres_id = 'postgres_default',
-    
+    table_types =                    """invoice_number varchar(10),
+                                        stock_code varchar(20),
+                                        detail varchar(1000),
+                                        quantity int,
+                                        invoice_date timestamp,
+                                        unit_price numeric(8,3),                           
+                                        customer_id int,
+                                        country varchar(20)""",
     aws_conn_id = 'aws_default',   
     dag = dag
 )
