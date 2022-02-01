@@ -10,7 +10,7 @@ import csv
 
 
 class s3ToEMR(BaseOperator):
-    """PostgresToSparkTransfer: custom operator created to move a s3 to glue and back to s3
+    """PostgresToSparkTransfer: custom operator created to move a s3 to EMR and back to s3
        Author: Oscar Garcia.      
        Creation Date: 01/02/2022.                   
 
