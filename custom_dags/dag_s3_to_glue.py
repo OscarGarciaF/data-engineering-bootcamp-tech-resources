@@ -9,8 +9,8 @@ import re
 import csv
 
 
-class PostgresToSparkTransfer(BaseOperator):
-    """PostgresToSparkTransfer: custom operator created to move a postgres table to spark back to postgres
+class s3ToGlue(BaseOperator):
+    """PostgresToSparkTransfer: custom operator created to move a s3 to glue and back to s3
        Author: Oscar Garcia.      
        Creation Date: 01/02/2022.                   
 
@@ -26,23 +26,39 @@ class PostgresToSparkTransfer(BaseOperator):
     @apply_defaults
     def __init__(
             self,
-            schema,
-            table,
+            s3_bucket,
+            s3_key,
+            wildcard_match=False,
             aws_conn_postgres_id ='postgres_default',
             aws_conn_id='aws_default',          
             *args, **kwargs):
-        super(PostgresToSparkTransfer, self).__init__(*args, **kwargs)
-        self.schema = schema
-        self.table = table
+        super(s3ToGlue, self).__init__(*args, **kwargs)
         self.aws_conn_postgres_id  = aws_conn_postgres_id 
         self.aws_conn_id = aws_conn_id
+        self.s3_bucket = s3_bucket
+        self.s3_key = s3_key
+        self.wildcard_match = wildcard_match
   
     def execute(self, context):
         
-        # Create an instances to connect S3 and Postgres DB.
+        
         self.log.info(self.aws_conn_postgres_id)        
-        self.pg_hook = PostgresHook(postgre_conn_id = self.aws_conn_postgres_id)
-        self.current_table = self.schema + "." + self.table
+        self.s3 = S3Hook(aws_conn_id = self.aws_conn_id, verify = self.verify)
+
+        self.log.info("Downloading S3 file")
+        self.log.info(self.s3_key + ', ' + self.s3_bucket)
+
+        # Validate if the file source exist or not in the bucket.
+        if self.wildcard_match:
+            if not self.s3.check_for_wildcard_key(self.s3_key, self.s3_bucket):
+                raise AirflowException("No key matches {0}".format(self.s3_key))
+            s3_key_object = self.s3.get_wildcard_key(self.s3_key, self.s3_bucket)
+        else:
+            if not self.s3.check_for_key(self.s3_key, self.s3_bucket):
+                raise AirflowException(
+                    "The key {0} does not exists".format(self.s3_key))
+                  
+            s3_key_object = self.s3.get_key(self.s3_key, self.s3_bucket)
    
 
         # Query and print the values of the table products in the console.
