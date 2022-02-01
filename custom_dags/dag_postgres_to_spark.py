@@ -28,37 +28,21 @@ class PostgresToSparkTransfer(BaseOperator):
             self,
             schema,
             table,
-            s3_bucket,
-            s3_key,
-            table_types,
             aws_conn_postgres_id ='postgres_default',
-            aws_conn_id='aws_default',
-            verify=None,
-            wildcard_match=False,
-            copy_options=tuple(),
-            autocommit=False,
-            parameters=None,            
+            aws_conn_id='aws_default',          
             *args, **kwargs):
         super(PostgresToSparkTransfer, self).__init__(*args, **kwargs)
         self.schema = schema
         self.table = table
-        self.s3_bucket = s3_bucket
-        self.s3_key = s3_key
         self.aws_conn_postgres_id  = aws_conn_postgres_id 
         self.aws_conn_id = aws_conn_id
-        self.verify = verify
-        self.wildcard_match = wildcard_match
-        self.copy_options = copy_options
-        self.autocommit = autocommit
-        self.parameters = parameters
-        self.table_types = table_types
   
     def execute(self, context):
         
         # Create an instances to connect S3 and Postgres DB.
-        self.log.info(self.aws_conn_postgres_id)   
-        
+        self.log.info(self.aws_conn_postgres_id)        
         self.pg_hook = PostgresHook(postgre_conn_id = self.aws_conn_postgres_id)
+        self.current_table = self.schema + "." + self.table
    
 
         # Query and print the values of the table products in the console.
