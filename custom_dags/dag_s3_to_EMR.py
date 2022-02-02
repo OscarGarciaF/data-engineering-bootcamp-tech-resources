@@ -48,6 +48,10 @@ class s3ToEMR(BaseOperator):
         self.log.info("Downloading S3 file")
         self.log.info(self.s3_key + ', ' + self.s3_bucket)
 
+
+
+
+
         # Validate if the file source exist or not in the bucket.
         if self.wildcard_match:
             if not self.s3.check_for_wildcard_key(self.s3_key, self.s3_bucket):
