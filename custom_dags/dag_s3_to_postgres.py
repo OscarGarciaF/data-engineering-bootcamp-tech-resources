@@ -171,7 +171,7 @@ class S3ToPostgresTransfer(BaseOperator):
         self.pg_hook.insert_rows(self.current_table,  
                                  list_df, 
                                  #target_fields = list_target_fields, 
-                                 commit_every = 3000,
+                                 commit_every = 2500,
                                  replace = False)
 
         # Query and print the values of the table products in the console.
