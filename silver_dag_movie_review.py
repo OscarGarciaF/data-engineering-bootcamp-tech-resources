@@ -102,7 +102,7 @@ JOB_FLOW_OVERRIDES = {
 
 BUCKET_NAME = "oscar-airflow-bucket"
 s3_data = "bronze/movie_review.csv"
-s3_script = "scripts/process_movie_review"
+s3_script = "dags/scripts/process_movie_review"
 s3_clean = "silver/reviews"
 
 create_emr_cluster = EmrCreateJobFlowOperator(
