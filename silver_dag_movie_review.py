@@ -27,7 +27,7 @@ SPARK_STEPS = [ # Note the params values are supplied to the operator
             "Args": [
                 "s3-dist-cp",
                 "--src=s3://{{ params.BUCKET_NAME }}/{{ params.input_schema}}",
-                "--dest=/movie",
+                "--dest=/input",
             ],
         },
     },
@@ -99,6 +99,12 @@ JOB_FLOW_OVERRIDES = {
 }
 
 # Create an EMR cluster
+
+BUCKET_NAME = "oscar-airflow-bucket"
+s3_data = "bronze/movie_review.csv"
+s3_script = "scripts/process_movie_review"
+s3_clean = "silver/reviews"
+
 create_emr_cluster = EmrCreateJobFlowOperator(
     task_id="create_emr_cluster",
     job_flow_overrides=JOB_FLOW_OVERRIDES,
@@ -113,25 +119,7 @@ create_emr_cluster = EmrCreateJobFlowOperator(
     dag=dag,
 )
 
-job_sensor = EmrJobFlowSensor(task_id='check_job_flow', job_flow_id=create_emr_cluster.output)
+job_sensor = EmrJobFlowSensor(task_id='check_job_flow', job_flow_id=create_emr_cluster.output, dag = dag)
 
-process_dag = S3ToPostgresTransfer(
-    task_id = 'dag_s3_to_postgres_user_purchase',
-    schema = 'bronze',
-    table= 'user_purchase',
-    s3_bucket = 'oscar-airflow-bucket',
-    s3_key =  'user_purchase.csv',
-    aws_conn_postgres_id = 'postgres_default',
-    table_types =                    """invoice_number varchar(10),
-                                        stock_code varchar(20),
-                                        detail varchar(1000),
-                                        quantity int,
-                                        invoice_date timestamp,
-                                        unit_price numeric(8,3),                           
-                                        customer_id int,
-                                        country varchar(20)""",
-    aws_conn_id = 'aws_default',   
-    dag = dag
-)
+create_emr_cluster >> job_sensor
 
-process_dag
