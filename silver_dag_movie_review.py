@@ -25,9 +25,9 @@ SPARK_STEPS = [ # Note the params values are supplied to the operator
         "HadoopJarStep": {
             "Jar": "command-runner.jar",
             "Args": [
-                "s3-dist-cp",
-                "--src=s3://{{ params.BUCKET_NAME }}/{{ params.input_schema}}",
-                "--dest=/input",
+                "s3-dist-cp ",
+                "--src=s3://{{ params.BUCKET_NAME }}/{{ params.input_schema}} ",
+                "--dest=/input ",
             ],
         },
     },
@@ -37,10 +37,10 @@ SPARK_STEPS = [ # Note the params values are supplied to the operator
         "HadoopJarStep": {
             "Jar": "command-runner.jar",
             "Args": [
-                "spark-submit",
-                "--deploy-mode",
-                "client",
-                "s3://{{ params.BUCKET_NAME }}/{{ params.s3_script }}",
+                "spark-submit ",
+                "--deploy-mode ",
+                "client ",
+                "s3://{{ params.BUCKET_NAME }}/{{ params.s3_script }} ",
             ],
         },
     },
@@ -50,12 +50,12 @@ SPARK_STEPS = [ # Note the params values are supplied to the operator
         "HadoopJarStep": {
             "Jar": "command-runner.jar",
             "Args": [
-                "s3-dist-cp",
-                "--src=/output",
-                "--dest=s3://{{ params.BUCKET_NAME }}/{{ params.output_schema}}",
+                "s3-dist-cp ",
+                "--src=/output ",
+                "--dest=s3://{{ params.BUCKET_NAME }}/{{ params.output_schema}} ",
             ],
         },
-    },
+    }
 ]
 
 
@@ -119,7 +119,7 @@ create_emr_cluster = EmrCreateJobFlowOperator(
     dag=dag,
 )
 
-job_sensor = EmrJobFlowSensor(task_id='check_job_flow', job_flow_id=create_emr_cluster.output, dag = dag)
+job_sensor = EmrJobFlowSensor(task_id='check_job_flow', job_flow_id="{{ task_instance.xcom_pull(task_ids='create_emr_cluster', key='return_value') }}", dag = dag)
 
 create_emr_cluster >> job_sensor
 
