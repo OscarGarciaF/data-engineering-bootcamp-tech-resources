@@ -6,7 +6,7 @@ from airflow import DAG
 # Operators; we need this to operate!
 from custom_dags.dag_s3_to_postgres import S3ToPostgresTransfer
 from airflow.contrib.operators.emr_create_job_flow_operator import EmrCreateJobFlowOperator
-from airflow.providers.amazon.aws.sensors.emr import EmrJobFlowSensor
+from airflow.contrib.sensors.emr_job_flow_sensor import EmrJobFlowSensor
 
 default_args = {
     'owner': 'oscar.garcia',
