@@ -22,7 +22,8 @@ def pyspark_script(input_loc, output_loc):
 
     df_out = df.withColumn("positive_review", array_contains(df.clean_words, "good").cast('integer'))
 
-    df_out.write.mode("overwrite").parquet(output_loc)
+    filename = "reviews"
+    df_out.write.mode("overwrite").parquet(output_loc + "/" + filename)
 
 
 if __name__ == "__main__":

@@ -7,6 +7,7 @@ from airflow import DAG
 from custom_dags.dag_s3_to_postgres import S3ToPostgresTransfer
 from airflow.contrib.operators.emr_create_job_flow_operator import EmrCreateJobFlowOperator
 from airflow.contrib.sensors.emr_job_flow_sensor import EmrJobFlowSensor
+from airflow.contrib.sensors.emr_step_sensor import  EmrStepSensor
 
 default_args = {
     'owner': 'oscar.garcia',
@@ -16,7 +17,11 @@ default_args = {
 
 dag = DAG('silver_dag_movie_review', default_args = default_args, schedule_interval = '@daily')
 
-
+BUCKET_NAME = "oscar-airflow-bucket"
+s3_data = "bronze/movie_review.csv"
+s3_script = "dags/scripts/process_movie_review"
+s3_clean = "silver/reviews/"
+logs_location = "logs"
 
 SPARK_STEPS = [ # Note the params values are supplied to the operator
     {
@@ -26,7 +31,7 @@ SPARK_STEPS = [ # Note the params values are supplied to the operator
             "Jar": "command-runner.jar",
             "Args": [
                 "s3-dist-cp ",
-                "--src=s3://{{ params.BUCKET_NAME }}/{{ params.input_schema}} ",
+                f"--src=s3://{BUCKET_NAME}/{s3_data}",
                 "--dest=/input ",
             ],
         },
@@ -37,10 +42,10 @@ SPARK_STEPS = [ # Note the params values are supplied to the operator
         "HadoopJarStep": {
             "Jar": "command-runner.jar",
             "Args": [
-                "spark-submit ",
-                "--deploy-mode ",
-                "client ",
-                "s3://{{ params.BUCKET_NAME }}/{{ params.s3_script }} ",
+                "spark-submit",
+                "--deploy-mode",
+                "client",
+                f"s3://{BUCKET_NAME}/{s3_script}",
             ],
         },
     },
@@ -50,9 +55,9 @@ SPARK_STEPS = [ # Note the params values are supplied to the operator
         "HadoopJarStep": {
             "Jar": "command-runner.jar",
             "Args": [
-                "s3-dist-cp ",
-                "--src=/output ",
-                "--dest=s3://{{ params.BUCKET_NAME }}/{{ params.output_schema}} ",
+                "s3-dist-cp",
+                "--src=/output",
+                f"--dest=s3://{BUCKET_NAME}/{s3_clean}",
             ],
         },
     }
@@ -61,7 +66,9 @@ SPARK_STEPS = [ # Note the params values are supplied to the operator
 
 JOB_FLOW_OVERRIDES = {
     "Name": "Process silver schema",
+    "ReleaseLabel": "emr-5.29.0",
     "Applications": [{"Name": "Hadoop"}, {"Name": "Spark"}], # We want our EMR cluster to have HDFS and Spark
+    "LogUri" : f"s3://{BUCKET_NAME}/{logs_location}",
     "Configurations": [
         {
             "Classification": "spark-env",
@@ -79,19 +86,21 @@ JOB_FLOW_OVERRIDES = {
                 "Name": "Master node",
                 "Market": "SPOT",
                 "InstanceRole": "MASTER",
-                "InstanceType": "t2.small",
+                "InstanceType": "m1.medium",
                 "InstanceCount": 1,
             },
             {
                 "Name": "Core - 2",
                 "Market": "SPOT", # Spot instances are a "use as available" instances
                 "InstanceRole": "CORE",
-                "InstanceType": "t2.small",
+                "InstanceType": "m1.medium",
                 "InstanceCount": 2,
             },
         ],
         "KeepJobFlowAliveWhenNoSteps": False,
-        "TerminationProtected": False, 
+        "TerminationProtected": False,
+        #"Ec2SubnetIds": ['subnet-05a8630d423a915a5', 'subnet-0d30cafcd1055a14b', 'subnet-03b36045df0954da2', 'subnet-02a105a1adcdc38ac'] 
+        "Ec2SubnetIds": ['subnet-05a8630d423a915a5']
     },
     'Steps': SPARK_STEPS,
     "JobFlowRole": "EMR_EC2_DefaultRole",
@@ -100,26 +109,27 @@ JOB_FLOW_OVERRIDES = {
 
 # Create an EMR cluster
 
-BUCKET_NAME = "oscar-airflow-bucket"
-s3_data = "bronze/movie_review.csv"
-s3_script = "dags/scripts/process_movie_review"
-s3_clean = "silver/reviews"
+
 
 create_emr_cluster = EmrCreateJobFlowOperator(
     task_id="create_emr_cluster",
     job_flow_overrides=JOB_FLOW_OVERRIDES,
     aws_conn_id="aws_default",
     emr_conn_id="emr_default",
-    params={ # these params are used to fill the paramterized values in SPARK_STEPS json
-        "BUCKET_NAME": BUCKET_NAME,
-        "s3_data": s3_data,
-        "s3_script": s3_script,
-        "s3_clean": s3_clean,
-    },
     dag=dag,
 )
 
-job_sensor = EmrJobFlowSensor(task_id='check_job_flow', job_flow_id="{{ task_instance.xcom_pull(task_ids='create_emr_cluster', key='return_value') }}", dag = dag)
+job_sensor = EmrJobFlowSensor(task_id='check_job_flow',
+ job_flow_id="{{ task_instance.xcom_pull(task_ids='create_emr_cluster', key='return_value') }}",
+ dag = dag)
+
+step_checker = EmrStepSensor(
+        task_id = 'watch_step',
+        job_flow_id = "{{ task_instance.xcom_pull(task_ids='create_emr_cluster', key='return_value') }}",
+        step_id = "{{ task_instance.xcom_pull(task_ids='create_emr_cluster', key='return_value')[0] }}",
+        dag = dag
+    )
 
 create_emr_cluster >> job_sensor
 
+create_emr_cluster >> step_checker
