@@ -19,7 +19,7 @@ dag = DAG('silver_dag_movie_review', default_args = default_args, schedule_inter
 
 BUCKET_NAME = "oscar-airflow-bucket"
 s3_data = "bronze/movie_review.csv"
-s3_script = "dags/scripts/process_movie_review"
+s3_script = "dags/scripts/process_movie_review.py"
 s3_clean = "silver/reviews/"
 logs_location = "logs"
 
@@ -30,7 +30,7 @@ SPARK_STEPS = [ # Note the params values are supplied to the operator
         "HadoopJarStep": {
             "Jar": "command-runner.jar",
             "Args": [
-                "s3-dist-cp ",
+                "s3-dist-cp",
                 f"--src=s3://{BUCKET_NAME}/{s3_data}",
                 "--dest=/input ",
             ],
