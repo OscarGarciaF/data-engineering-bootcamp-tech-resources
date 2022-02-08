@@ -66,7 +66,7 @@ SPARK_STEPS = [ # Note the params values are supplied to the operator
 
 JOB_FLOW_OVERRIDES = {
     "Name": "Process silver schema",
-    "ReleaseLabel": "emr-5.34.0",
+    "ReleaseLabel": "emr-6.5.0",
     "Applications": [{"Name": "Hadoop"}, {"Name": "Spark"}], # We want our EMR cluster to have HDFS and Spark
     "LogUri" : f"s3://{BUCKET_NAME}/{logs_location}",
     "Configurations": [
@@ -123,13 +123,8 @@ job_sensor = EmrJobFlowSensor(task_id='check_job_flow',
  job_flow_id="{{ task_instance.xcom_pull(task_ids='create_emr_cluster', key='return_value') }}",
  dag = dag)
 
-step_checker = EmrStepSensor(
-        task_id = 'watch_step',
-        job_flow_id = "{{ task_instance.xcom_pull(task_ids='create_emr_cluster', key='return_value') }}",
-        step_id = "{{ task_instance.xcom_pull(task_ids='create_emr_cluster', key='return_value')[0] }}",
-        dag = dag
-    )
+
 
 create_emr_cluster >> job_sensor
 
-create_emr_cluster >> step_checker
+
