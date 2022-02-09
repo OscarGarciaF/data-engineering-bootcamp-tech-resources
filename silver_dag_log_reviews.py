@@ -76,7 +76,7 @@ JOB_FLOW_OVERRIDES = {
         ],
         "KeepJobFlowAliveWhenNoSteps": False,
         "TerminationProtected": False,
-        "Ec2SubnetIds": ['subnet-05a8630d423a915a5']
+        "Ec2SubnetIds": ['subnet-0aece929207a7df91']
     },
     'Steps': SPARK_STEPS,
     'BootstrapActions': [
