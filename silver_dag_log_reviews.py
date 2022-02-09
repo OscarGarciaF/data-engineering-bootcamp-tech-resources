@@ -15,7 +15,7 @@ default_args = {
     'start_date': airflow.utils.dates.days_ago(1)
 }
 
-dag = DAG('silver_dag_movie_review', default_args = default_args, schedule_interval = '@daily')
+dag = DAG('silver_dag_log_reviews', default_args = default_args, schedule_interval = '@daily')
 
 BUCKET_NAME = "oscar-airflow-bucket"
 s3_script = "dags/scripts/process_log_reviews.py"
