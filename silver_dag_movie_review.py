@@ -23,7 +23,8 @@ s3_script = "dags/scripts/process_movie_review.py"
 s3_clean = "silver/reviews/"
 logs_location = "logs"
 
-SPARK_STEPS = [ # Note the params values are supplied to the operator
+SPARK_STEPS = [ 
+    
     {
         "Name": "Move raw data from S3 to HDFS",
         "ActionOnFailure": "CANCEL_AND_WAIT",
@@ -66,7 +67,7 @@ SPARK_STEPS = [ # Note the params values are supplied to the operator
 
 JOB_FLOW_OVERRIDES = {
     "Name": "Process silver schema",
-    "ReleaseLabel": "emr-6.5.0",
+    "ReleaseLabel": "emr-5.29.0",
     "Applications": [{"Name": "Hadoop"}, {"Name": "Spark"}], # We want our EMR cluster to have HDFS and Spark
     "LogUri" : f"s3://{BUCKET_NAME}/{logs_location}",
     "Configurations": [
