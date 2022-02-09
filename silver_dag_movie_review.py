@@ -24,19 +24,6 @@ s3_clean = "silver/reviews/"
 logs_location = "logs"
 
 SPARK_STEPS = [ 
-    
-    {
-        "Name": "Move raw data from S3 to HDFS",
-        "ActionOnFailure": "CANCEL_AND_WAIT",
-        "HadoopJarStep": {
-            "Jar": "command-runner.jar",
-            "Args": [
-                "s3-dist-cp",
-                f"--src=s3://{BUCKET_NAME}/{s3_data}",
-                "--dest=/input ",
-            ],
-        },
-    },
     {
         "Name": "Process silver data",
         "ActionOnFailure": "CANCEL_AND_WAIT",
@@ -47,18 +34,6 @@ SPARK_STEPS = [
                 "--deploy-mode",
                 "client",
                 f"s3://{BUCKET_NAME}/{s3_script}",
-            ],
-        },
-    },
-    {
-        "Name": "Move clean data from HDFS to S3",
-        "ActionOnFailure": "CANCEL_AND_WAIT",
-        "HadoopJarStep": {
-            "Jar": "command-runner.jar",
-            "Args": [
-                "s3-dist-cp",
-                "--src=/output",
-                f"--dest=s3://{BUCKET_NAME}/{s3_clean}",
             ],
         },
     }
