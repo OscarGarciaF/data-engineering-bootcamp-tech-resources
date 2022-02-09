@@ -18,9 +18,10 @@ default_args = {
 dag = DAG('silver_dag_movie_review', default_args = default_args, schedule_interval = '@daily')
 
 BUCKET_NAME = "oscar-airflow-bucket"
-s3_data = "bronze/movie_review.csv"
-s3_script = "dags/scripts/process_movie_review.py"
-s3_clean = "silver/reviews/"
+s3_script = "dags/scripts/process_log_reviews.py"
+s3_data = "bronze/log_reviews.csv"
+s3_clean = "silver/log_reviews/"
+s3_requirements = "requirements/reqs.sh"
 logs_location = "logs"
 
 SPARK_STEPS = [ 
@@ -75,10 +76,17 @@ JOB_FLOW_OVERRIDES = {
         ],
         "KeepJobFlowAliveWhenNoSteps": False,
         "TerminationProtected": False,
-        #"Ec2SubnetIds": ['subnet-05a8630d423a915a5', 'subnet-0d30cafcd1055a14b', 'subnet-03b36045df0954da2', 'subnet-02a105a1adcdc38ac'] 
         "Ec2SubnetIds": ['subnet-05a8630d423a915a5']
     },
     'Steps': SPARK_STEPS,
+    'BootstrapActions': [
+        {
+            'Name': 'Install Python Modules',
+            'ScriptBootstrapAction': {
+                'Path': f"s3://{BUCKET_NAME}/{s3_requirements}",
+            }
+        },
+    ],
     "JobFlowRole": "EMR_EC2_DefaultRole",
     "ServiceRole": "EMR_DefaultRole",
 }
