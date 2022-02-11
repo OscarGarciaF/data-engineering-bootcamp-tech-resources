@@ -35,5 +35,5 @@ if __name__ == "__main__":
     parser.add_argument("--input", type=str, help="HDFS input", default=f"s3://{BUCKET_NAME}/{s3_data}")
     parser.add_argument("--output", type=str, help="HDFS output", default=f"s3://{BUCKET_NAME}/{s3_clean}")
     args = parser.parse_args()
-    spark = SparkSession.builder.appName("Text classifier").getOrCreate()
+    spark = SparkSession.builder.appName("process movie review script").getOrCreate()
     pyspark_script(input_loc=args.input, output_loc=args.output)

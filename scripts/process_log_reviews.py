@@ -59,5 +59,5 @@ if __name__ == "__main__":
     parser.add_argument("--output", type=str, help="HDFS output", default=f"s3://{BUCKET_NAME}/{s3_clean}")
     args = parser.parse_args()
     environ['PYSPARK_SUBMIT_ARGS'] = '--packages com.databricks:spark-xml_2.12:0.14.0 pyspark-shell' 
-    spark = SparkSession.builder.appName("Text classifier").getOrCreate()
+    spark = SparkSession.builder.appName("process log reviews script").getOrCreate()
     pyspark_script(input_loc=args.input, output_loc=args.output)
