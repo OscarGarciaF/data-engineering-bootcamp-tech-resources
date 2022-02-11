@@ -21,6 +21,7 @@ BUCKET_NAME = "oscar-airflow-bucket"
 s3_script = "dags/scripts/process_log_reviews.py"
 s3_data = "bronze/log_reviews.csv"
 s3_clean = "silver/log_reviews_parsed/"
+s3_requirements = "requirements/reqs.sh"
 logs_location = "logs"
 
 SPARK_STEPS = [ 
@@ -73,6 +74,13 @@ JOB_FLOW_OVERRIDES = {
                 "InstanceCount": 2,
             },
         ],
+        'BootstrapActions': [
+        {
+            'Name': 'Install Python Modules',
+            'ScriptBootstrapAction': {
+                'Path': f"s3://{BUCKET_NAME}/{s3_requirements}",
+            }
+        }, ],
         "KeepJobFlowAliveWhenNoSteps": False,
         "TerminationProtected": False,
         "Ec2SubnetIds": ['subnet-084f71fbf730ba249']
