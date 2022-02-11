@@ -74,17 +74,18 @@ JOB_FLOW_OVERRIDES = {
                 "InstanceCount": 2,
             },
         ],
-        'BootstrapActions': [
+
+        "KeepJobFlowAliveWhenNoSteps": False,
+        "TerminationProtected": False,
+        "Ec2SubnetIds": ['subnet-084f71fbf730ba249']
+    },
+    'BootstrapActions': [
         {
             'Name': 'Install Python Modules',
             'ScriptBootstrapAction': {
                 'Path': f"s3://{BUCKET_NAME}/{s3_requirements}",
             }
         }, ],
-        "KeepJobFlowAliveWhenNoSteps": False,
-        "TerminationProtected": False,
-        "Ec2SubnetIds": ['subnet-084f71fbf730ba249']
-    },
     'Steps': SPARK_STEPS,
     "JobFlowRole": "EMR_EC2_DefaultRole",
     "ServiceRole": "EMR_DefaultRole",
