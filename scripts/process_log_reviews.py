@@ -9,6 +9,8 @@ from os import environ
 from pyspark.sql.column import Column, _to_java_column
 from pyspark.sql.types import _parse_datatype_json_string
 
+
+
 def ext_schema_of_xml_df(df, options={}):
     assert len(df.columns) == 1
 
@@ -33,7 +35,6 @@ def ext_from_xml(xml_column, schema, options={}):
 def pyspark_script(input_loc, output_loc):
 
     print("starting")
-
     df_raw = spark.read.options(header = True).csv(input_loc)
 
     #df_raw.printSchema()
@@ -58,6 +59,8 @@ if __name__ == "__main__":
     parser.add_argument("--input", type=str, help="HDFS input", default=f"s3://{BUCKET_NAME}/{s3_data}")
     parser.add_argument("--output", type=str, help="HDFS output", default=f"s3://{BUCKET_NAME}/{s3_clean}")
     args = parser.parse_args()
-    environ['PYSPARK_SUBMIT_ARGS'] = '--packages com.databricks:spark-xml_2.13:0.14.0 pyspark-shell' 
+    
+
     spark = SparkSession.builder.appName("process log reviews script").getOrCreate()
+    print(spark.sparkContext.getConf().getAll())
     pyspark_script(input_loc=args.input, output_loc=args.output)
