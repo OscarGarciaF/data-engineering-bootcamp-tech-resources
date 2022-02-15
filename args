@@ -1,7 +1,4 @@
 --deploy-mode client
---packages com.databricks:spark-xml_2.13:0.14.0
---jars s3://oscar-airflow-bucket/jars/spark-xml_2.13-0.14.0.jar
---driver-class-path  s3://oscar-airflow-bucket/jars/spark-xml_2.13-0.14.0.jar 
---conf spark.executor.extraLibraryPath=s3://oscar-airflow-bucket/jars/spark-xml_2.13-0.14.0.jar 
+--packages com.databricks:spark-xml_2.12:0.14.0
 
 

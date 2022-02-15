@@ -49,18 +49,18 @@ def pyspark_script(input_loc, output_loc):
     #print(df_out.head(5))
 
     df_out.write.mode("overwrite").parquet(output_loc)
-
+    print("finished")
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser()
     BUCKET_NAME = "oscar-airflow-bucket"
     s3_data = "bronze/log_reviews.csv"
-    s3_clean = "silver/log_reviews_parsed/"
+    s3_clean = "silver/log_reviews_parsed"
     parser.add_argument("--input", type=str, help="HDFS input", default=f"s3://{BUCKET_NAME}/{s3_data}")
     parser.add_argument("--output", type=str, help="HDFS output", default=f"s3://{BUCKET_NAME}/{s3_clean}")
     args = parser.parse_args()
     
 
     spark = SparkSession.builder.appName("process log reviews script").getOrCreate()
-    print(spark.sparkContext.getConf().getAll())
+    #print(spark.sparkContext.getConf().getAll())
     pyspark_script(input_loc=args.input, output_loc=args.output)
