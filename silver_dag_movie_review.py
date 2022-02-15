@@ -75,8 +75,7 @@ JOB_FLOW_OVERRIDES = {
         ],
         "KeepJobFlowAliveWhenNoSteps": False,
         "TerminationProtected": False,
-        #"Ec2SubnetIds": ['subnet-05a8630d423a915a5', 'subnet-0d30cafcd1055a14b', 'subnet-03b36045df0954da2', 'subnet-02a105a1adcdc38ac'] 
-        "Ec2SubnetIds": ['subnet-084f71fbf730ba249']
+        "Ec2SubnetIds": ['subnet-0522ab66c76e0b415']
     },
     'Steps': SPARK_STEPS,
     "JobFlowRole": "EMR_EC2_DefaultRole",

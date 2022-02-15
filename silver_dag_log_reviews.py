@@ -34,7 +34,11 @@ SPARK_STEPS = [
                 "spark-submit",
                 "--deploy-mode",
                 "client",
-                f"s3://{BUCKET_NAME}/{s3_script}",
+                "--packages com.databricks:spark-xml_2.13:0.14.0",
+                "--jars s3://oscar-airflow-bucket/jars/spark-xml_2.13-0.14.0.jar",
+                "--driver-class-path  s3://oscar-airflow-bucket/jars/spark-xml_2.13-0.14.0.jar",
+                "--conf spark.executor.extraLibraryPath=s3://oscar-airflow-bucket/jars/spark-xml_2.13-0.14.0.jar",
+                f"s3://{BUCKET_NAME}/{s3_script}"
             ],
         },
     }
@@ -77,15 +81,8 @@ JOB_FLOW_OVERRIDES = {
 
         "KeepJobFlowAliveWhenNoSteps": False,
         "TerminationProtected": False,
-        "Ec2SubnetIds": ['subnet-084f71fbf730ba249']
+        "Ec2SubnetIds": ['subnet-0522ab66c76e0b415']
     },
-    'BootstrapActions': [
-        {
-            'Name': 'Install Python Modules',
-            'ScriptBootstrapAction': {
-                'Path': f"s3://{BUCKET_NAME}/{s3_requirements}",
-            }
-        }, ],
     'Steps': SPARK_STEPS,
     "JobFlowRole": "EMR_EC2_DefaultRole",
     "ServiceRole": "EMR_DefaultRole",

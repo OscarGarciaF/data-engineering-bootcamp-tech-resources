@@ -173,3 +173,5 @@ override.tf.json
 # Credentials 
 **credentials**
 account.json
+
+scripts/*/

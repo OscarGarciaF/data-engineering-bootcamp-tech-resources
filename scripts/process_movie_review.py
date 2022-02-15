@@ -31,7 +31,7 @@ if __name__ == "__main__":
     parser = argparse.ArgumentParser()
     BUCKET_NAME = "oscar-airflow-bucket"
     s3_data = "bronze/movie_review.csv"
-    s3_clean = "silver/reviews/"
+    s3_clean = "silver/reviews"
     parser.add_argument("--input", type=str, help="HDFS input", default=f"s3://{BUCKET_NAME}/{s3_data}")
     parser.add_argument("--output", type=str, help="HDFS output", default=f"s3://{BUCKET_NAME}/{s3_clean}")
     args = parser.parse_args()
