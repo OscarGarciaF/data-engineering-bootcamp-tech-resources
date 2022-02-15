@@ -34,7 +34,8 @@ SPARK_STEPS = [
                 "spark-submit",
                 "--deploy-mode",
                 "client",
-                "--packages com.databricks:spark-xml_2.12:0.14.0",
+                "--packages",
+                "com.databricks:spark-xml_2.12:0.14.0",
                 f"s3://{BUCKET_NAME}/{s3_script}"
             ],
         },
