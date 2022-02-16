@@ -175,3 +175,4 @@ override.tf.json
 account.json
 
 scripts/*/
+queries
