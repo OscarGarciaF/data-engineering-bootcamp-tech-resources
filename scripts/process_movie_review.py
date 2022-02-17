@@ -23,7 +23,7 @@ def pyspark_script(input_loc, output_loc):
 
     df = df.withColumn("positive_review", array_contains(df.clean_words, "good").cast('integer'))
 
-    df_out = df.select("cid", "positive_review")
+    df_out = df.select("cid", "positive_review", "id_review")
     df_out.write.mode("overwrite").parquet(output_loc)
 
 
