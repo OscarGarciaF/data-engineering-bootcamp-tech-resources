@@ -175,4 +175,4 @@ override.tf.json
 account.json
 
 scripts/*/
-queries
+queries/external_rds.sql
