@@ -21,10 +21,11 @@ drop table if exists s3_schema.movie_reviews;
 
 create external table s3_schema.movie_reviews(
   cid varchar,
-  positive_review integer
+  positive_review integer,
+  id_review varchar
 )
 stored as PARQUET
-LOCATION 's3://oscar-airflow-bucket/silver/movie_reviews2/';
+LOCATION 's3://oscar-airflow-bucket/silver/movie_reviews/';
 
 drop table if exists s3_schema.user_purchase;
 
