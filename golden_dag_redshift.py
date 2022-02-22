@@ -159,8 +159,8 @@ ORDER BY count DESC;
 """
 
 
-s3_key = ""
-s3_bucket = ""
+s3_key = "ans/questions_answers.json"
+s3_bucket = "oscar-airflow-bucket"
 
 default_args = {
     'owner': 'oscar.garcia',
@@ -203,7 +203,7 @@ def save_ans_s3(**context):
     hook.load_string(json.dumps(ans), s3_key, bucket_name=s3_bucket, replace=True)
 
 
-    
+#file_content = hook.read_key(key=S3_FILE_NAME, bucket_name=Variable.get("S3_BUCKET"))
 
 task_setup_external_tables = RedshiftSQLOperator(
         task_id='setup_external_tables',
