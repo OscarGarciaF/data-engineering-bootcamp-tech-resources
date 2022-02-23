@@ -1,61 +1,67 @@
 import airflow.utils.dates
 from airflow import DAG
 import json
-from airflow.providers.amazon.aws.operators.redshift_sql import RedshiftSQLOperator
-from airflow.providers.amazon.aws.hooks.redshift import RedshiftHook
+#from airflow.providers.amazon.aws.operators.redshift_sql import RedshiftSQLOperator
+from airflow.providers.postgres.operators.postgres import PostgresOperator as RedshiftSQLOperator
+#from airflow.providers.amazon.aws.hooks.redshift import RedshiftHook
+from airflow.providers.postgres.hooks.postgres import PostgresHook as RedshiftHook
 from airflow.operators.python_operator import PythonOperator
-from airflow.providers.amazon.aws.hooks import S3Hook
+#from airflow.providers.amazon.aws.hooks import S3Hook
+from airflow.hooks.S3_hook  import  S3Hook
 
 
+s3_external_queries = ["""
+                      create external schema if not exists s3_schema
+                      from data catalog
+                      database 's3_db'
+                      iam_role 'arn:aws:iam::704943069631:role/service-role/AmazonRedshift-CommandsAccessRole-20220215T161638'
+                      create external database if not exists;""",
 
-s3_external_queries = """
-create external schema if not exists s3_schema
-from data catalog
-database 's3_db'
-iam_role 'arn:aws:iam::704943069631:role/service-role/AmazonRedshift-CommandsAccessRole-20220215T161638'
-create external database if not exists;
+                      "drop table if exists s3_schema.log_reviews;",
 
-drop table if exists s3_schema.log_reviews;
+                      "drop table if exists s3_schema.movie_reviews;",
 
-create external table s3_schema.log_reviews(
-  logDate varchar,
-  device varchar,
-  location varchar,
-  os varchar,
-  ipAddress varchar,
-  phoneNumber varchar
-)
-stored as PARQUET
-LOCATION 's3://oscar-airflow-bucket/silver/log_reviews_parsed/';
+                      "drop table if exists s3_schema.user_purchase;",
 
-drop table if exists s3_schema.movie_reviews;
+                      """create external table s3_schema.log_reviews(
+                        logDate varchar,
+                        device varchar,
+                        location varchar,
+                        os varchar,
+                        ipAddress varchar,
+                        phoneNumber varchar
+                      )
+                      stored as PARQUET
+                      LOCATION 's3://oscar-airflow-bucket/silver/log_reviews_parsed/';""",
+                      
+                      """
+                      create external table s3_schema.movie_reviews(
+                        cid varchar,
+                        positive_review integer,
+                        id_review varchar
+                      )
+                      stored as PARQUET
+                      LOCATION 's3://oscar-airflow-bucket/silver/movie_reviews/';
+                      """,
+                      
+                      """
+                      create external table s3_schema.user_purchase(
+                        invoice_number varchar,
+                        stock_code varchar,
+                        detail varchar,
+                        quantity int,
+                        invoice_date timestamp,
+                        unit_price numeric,                           
+                        customer_id int,
+                        country varchar
+                      )
+                      row format delimited
+                      fields terminated by ','
+                      stored as textfile
+                      location 's3://oscar-airflow-bucket/bronze/user_purchase_manifest.json'
+                      table properties ('skip.header.line.count'='1');
+                      """]
 
-create external table s3_schema.movie_reviews(
-  cid varchar,
-  positive_review integer,
-  id_review varchar
-)
-stored as PARQUET
-LOCATION 's3://oscar-airflow-bucket/silver/movie_reviews/';
-
-drop table if exists s3_schema.user_purchase;
-
-create external table s3_schema.user_purchase(
-  invoice_number varchar,
-  stock_code varchar,
-  detail varchar,
-  quantity int,
-  invoice_date timestamp,
-  unit_price numeric,                           
-  customer_id int,
-  country varchar
-)
-row format delimited
-fields terminated by ','
-stored as textfile
-location 's3://oscar-airflow-bucket/bronze/user_purchase_manifest.json'
-table properties ('skip.header.line.count'='1');
-"""
 
 golden_view_query = """
 CREATE OR REPLACE VIEW golden_aggs AS
@@ -176,7 +182,7 @@ def _query_redshift(sql_query, **context):
     Queries Postgres and returns a cursor to the results.
     """
 
-    postgres = RedshiftHook()
+    postgres = RedshiftHook(postgres_conn_id='redshift_default')
     conn = postgres.get_conn()
     cursor = conn.cursor()
     executed_cursor = cursor.execute(sql_query)
@@ -197,25 +203,29 @@ def save_ans_s3(**context):
             "Q4" :  context['ti'].xcom_pull(task_ids='task_Q4'),
             "Q5" :  context['ti'].xcom_pull(task_ids='task_Q5')
             }
-
-    hook = S3Hook(aws_conn_id="s3_connection")
+    hook = S3Hook()
 
     hook.load_string(json.dumps(ans), s3_key, bucket_name=s3_bucket, replace=True)
 
 
 #file_content = hook.read_key(key=S3_FILE_NAME, bucket_name=Variable.get("S3_BUCKET"))
 
-task_setup_external_tables = RedshiftSQLOperator(
-        task_id='setup_external_tables',
-        redshift_conn_id="redshift_default",
+
+task_setup_external_queries = RedshiftSQLOperator(
+        postgres_conn_id='redshift_default',
+        task_id='setup_external_queries',
+        #redshift_conn_id="redshift_default",
         sql= s3_external_queries,
+        autocommit = True,
         dag = dag
         )
 
 task_setup_metrics_view = RedshiftSQLOperator(
+        postgres_conn_id='redshift_default',
         task_id='setup_metrics_view',
-        redshift_conn_id="redshift_default",
+        #redshift_conn_id="redshift_default",
         sql= golden_view_query,
+        autocommit = True,
         dag = dag
         )
 
@@ -234,21 +244,21 @@ t_q2 = PythonOperator(
 )
 
 t_q3 = PythonOperator(
-    task_id='task_Q1',
+    task_id='task_Q3',
     python_callable= _query_redshift,
     op_kwargs = {"sql_query" : q3_query},
     dag=dag,
 )
 
 t_q4 = PythonOperator(
-    task_id='task_Q1',
+    task_id='task_Q4',
     python_callable= _query_redshift,
     op_kwargs = {"sql_query" : q4_query},
     dag=dag,
 )
 
 t_q5 = PythonOperator(
-    task_id='task_Q1',
+    task_id='task_Q5',
     python_callable= _query_redshift,
     op_kwargs = {"sql_query" : q5_query},
     dag=dag,
@@ -260,4 +270,4 @@ t_save_ans = PythonOperator(
     dag=dag,
 )
 
-task_setup_external_tables >> task_setup_metrics_view >> t_q1 >> t_q2 >> t_q2 >> t_q3 >> t_q4 >> t_q5 >> t_save_ans
+task_setup_external_queries >> task_setup_metrics_view >> t_q1 >> t_q2 >> t_q3 >> t_q4 >> t_q5 >> t_save_ans
