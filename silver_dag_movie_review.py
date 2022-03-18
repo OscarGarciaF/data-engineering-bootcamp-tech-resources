@@ -6,8 +6,12 @@ from airflow import DAG
 # Operators; we need this to operate!
 from custom_dags.dag_s3_to_postgres import S3ToPostgresTransfer
 from airflow.contrib.operators.emr_create_job_flow_operator import EmrCreateJobFlowOperator
+from airflow.contrib.operators.emr_add_steps_operator import EmrAddStepsOperator
 from airflow.contrib.sensors.emr_job_flow_sensor import EmrJobFlowSensor
+
 from airflow.contrib.sensors.emr_step_sensor import  EmrStepSensor
+
+
 
 default_args = {
     'owner': 'oscar.garcia',
@@ -23,17 +27,21 @@ s3_script = "dags/scripts/process_movie_review.py"
 s3_clean = "silver/reviews/"
 logs_location = "logs"
 
+
 SPARK_STEPS = [ 
+
     {
         "Name": "Process silver data",
         "ActionOnFailure": "CANCEL_AND_WAIT",
         "HadoopJarStep": {
             "Jar": "command-runner.jar",
             "Args": [
+
                 "spark-submit",
                 "--deploy-mode",
                 "client",
                 f"s3://{BUCKET_NAME}/{s3_script}",
+
             ],
         },
     }
@@ -73,10 +81,11 @@ JOB_FLOW_OVERRIDES = {
                 "InstanceCount": 2,
             },
         ],
+
         "KeepJobFlowAliveWhenNoSteps": False,
         "TerminationProtected": False
+
     },
-    'Steps': SPARK_STEPS,
     "JobFlowRole": "EMR_EC2_DefaultRole",
     "ServiceRole": "EMR_DefaultRole",
 }
@@ -84,12 +93,12 @@ JOB_FLOW_OVERRIDES = {
 # Create an EMR cluster
 
 
-
 create_emr_cluster = EmrCreateJobFlowOperator(
     task_id="create_emr_cluster",
     job_flow_overrides=JOB_FLOW_OVERRIDES,
     aws_conn_id="aws_default",
     emr_conn_id="emr_default",
+
     dag=dag,
 )
 
@@ -99,6 +108,9 @@ job_sensor = EmrJobFlowSensor(task_id='check_job_flow',
 
 
 
-create_emr_cluster >> job_sensor
+
+create_emr_cluster >> step_adder >> step_checker >> terminate_emr_cluster
+
+
 
 
