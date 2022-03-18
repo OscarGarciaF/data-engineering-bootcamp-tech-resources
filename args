@@ -1,0 +1,4 @@
+--deploy-mode client
+--packages com.databricks:spark-xml_2.12:0.14.0
+
+

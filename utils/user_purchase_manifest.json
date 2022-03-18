@@ -1,0 +1,5 @@
+{
+    "entries": [
+      {"url":"s3://oscar-airflow-bucket/bronze/user_purchase.csv", "mandatory":true, "meta": { "content_length": 45580626 }}
+    ]
+  }

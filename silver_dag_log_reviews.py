@@ -6,12 +6,8 @@ from airflow import DAG
 # Operators; we need this to operate!
 from custom_dags.dag_s3_to_postgres import S3ToPostgresTransfer
 from airflow.contrib.operators.emr_create_job_flow_operator import EmrCreateJobFlowOperator
-from airflow.contrib.operators.emr_add_steps_operator import EmrAddStepsOperator
 from airflow.contrib.sensors.emr_job_flow_sensor import EmrJobFlowSensor
-
 from airflow.contrib.sensors.emr_step_sensor import  EmrStepSensor
-
-
 
 default_args = {
     'owner': 'oscar.garcia',
@@ -19,29 +15,28 @@ default_args = {
     'start_date': airflow.utils.dates.days_ago(1)
 }
 
-dag = DAG('silver_dag_movie_review', default_args = default_args, schedule_interval = '@daily')
+dag = DAG('silver_dag_log_reviews', default_args = default_args, schedule_interval = '@daily')
 
 BUCKET_NAME = "oscar-airflow-bucket"
-s3_data = "bronze/movie_review.csv"
-s3_script = "dags/scripts/process_movie_review.py"
-s3_clean = "silver/reviews/"
+s3_script = "dags/scripts/process_log_reviews.py"
+s3_data = "bronze/log_reviews.csv"
+s3_clean = "silver/log_reviews_parsed/"
+s3_requirements = "requirements/reqs.sh"
 logs_location = "logs"
 
-
 SPARK_STEPS = [ 
-
     {
         "Name": "Process silver data",
         "ActionOnFailure": "CANCEL_AND_WAIT",
         "HadoopJarStep": {
             "Jar": "command-runner.jar",
             "Args": [
-
                 "spark-submit",
                 "--deploy-mode",
                 "client",
-                f"s3://{BUCKET_NAME}/{s3_script}",
-
+                "--packages",
+                "com.databricks:spark-xml_2.12:0.14.0",
+                f"s3://{BUCKET_NAME}/{s3_script}"
             ],
         },
     }
@@ -49,7 +44,7 @@ SPARK_STEPS = [
 
 
 JOB_FLOW_OVERRIDES = {
-    "Name": "Process movie review",
+    "Name": "Process log reviews",
     "ReleaseLabel": "emr-6.5.0",
     "Applications": [{"Name": "Hadoop"}, {"Name": "Spark"}], # We want our EMR cluster to have HDFS and Spark
     "LogUri" : f"s3://{BUCKET_NAME}/{logs_location}",
@@ -84,8 +79,8 @@ JOB_FLOW_OVERRIDES = {
 
         "KeepJobFlowAliveWhenNoSteps": False,
         "TerminationProtected": False
-
     },
+    'Steps': SPARK_STEPS,
     "JobFlowRole": "EMR_EC2_DefaultRole",
     "ServiceRole": "EMR_DefaultRole",
 }
@@ -93,12 +88,12 @@ JOB_FLOW_OVERRIDES = {
 # Create an EMR cluster
 
 
+
 create_emr_cluster = EmrCreateJobFlowOperator(
     task_id="create_emr_cluster",
     job_flow_overrides=JOB_FLOW_OVERRIDES,
     aws_conn_id="aws_default",
     emr_conn_id="emr_default",
-
     dag=dag,
 )
 
@@ -108,9 +103,6 @@ job_sensor = EmrJobFlowSensor(task_id='check_job_flow',
 
 
 
-
-create_emr_cluster >> step_adder >> step_checker >> terminate_emr_cluster
-
-
+create_emr_cluster >> job_sensor
 
 
